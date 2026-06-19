@@ -10,7 +10,7 @@ Point your agent at one endpoint and reach every model, open and closed. Your ag
 
 | Component | Description | Status |
 |-----------|-------------|--------|
-| API | OpenAI-compatible inference gateway | Phase 1 Complete |
+| API | OpenAI-compatible inference gateway | Phase 2 Complete |
 | MCP | Model Context Protocol server | Not Started |
 | Web | Landing page + dashboard | Not Started |
 | x402 | USDC payment settlement | Not Started |
@@ -54,24 +54,24 @@ Point your agent at one endpoint and reach every model, open and closed. Your ag
 
 ---
 
-## Phase 2: Provider Routing & Multi-Model Support
+## Phase 2: Provider Routing & Multi-Model Support [COMPLETE]
 
 **Goal:** Route requests to multiple providers (Together, Fireworks, Groq, OpenAI, Anthropic).
 
-- [ ] Define provider adapter interface
-- [ ] Implement Together.ai adapter
-- [ ] Implement Fireworks adapter
-- [ ] Implement Groq adapter
-- [ ] Implement OpenAI adapter (for closed models)
-- [ ] Implement Anthropic adapter (for Claude)
-- [ ] Model registry with provider mappings
-- [ ] Routing logic: cheapest, fastest, or specific provider
-- [ ] Automatic failover on provider error
-- [ ] Circuit breaker for unhealthy providers
-- [ ] Health monitoring per provider
-- [ ] Tests for routing logic and failover
+- [x] Define provider adapter interface
+- [x] Implement Together.ai adapter (OpenAI-compatible)
+- [x] Implement Fireworks adapter (OpenAI-compatible)
+- [x] Implement Groq adapter (OpenAI-compatible)
+- [x] Implement OpenAI adapter
+- [x] Implement Anthropic adapter (custom format)
+- [x] Model registry with provider mappings
+- [x] Routing logic: cheapest, fastest, or specific provider
+- [x] Automatic failover on provider error (3 retries)
+- [x] Circuit breaker for unhealthy providers (5 failure threshold)
+- [x] Health monitoring per provider
+- [x] Tests for routing logic and failover (19 new tests)
 
-**Definition of Done:** Requests route to correct provider, failover works, circuit breaker prevents cascading failures.
+**Definition of Done:** Requests route to correct provider, failover works, circuit breaker prevents cascading failures. DONE
 
 ---
 
@@ -289,7 +289,7 @@ Design tokens:
 
 ## Current Status
 
-**Active Phase:** Phase 2 - Provider Routing & Multi-Model Support
+**Active Phase:** Phase 3 - Budget System & Spend Control
 
 **Last Updated:** 2026-06-19
 
@@ -301,6 +301,7 @@ Design tokens:
 |-------|--------|------|-------|
 | 0 | bbbf24f | 2026-06-19 | Project setup complete |
 | 1 | f130182 | 2026-06-19 | Core API with streaming, 15 tests passing |
+| 2 | pending | 2026-06-19 | Provider routing, circuit breaker, 34 tests |
 
 ---
 
