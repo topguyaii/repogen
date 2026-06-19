@@ -180,10 +180,10 @@ export const MODELS: Record<string, ModelDefinition> = {
   },
 
   // ===================
-  // CLOSED MODELS (Top 10)
+  // CLOSED MODELS (5 Affordable)
   // ===================
 
-  // GPT-4o - OpenAI flagship
+  // GPT-4o - OpenAI flagship, great all-rounder
   'gpt-4o': {
     id: 'gpt-4o',
     name: 'GPT-4o',
@@ -196,7 +196,7 @@ export const MODELS: Record<string, ModelDefinition> = {
     privacy_tiers: ['standard'],
   },
 
-  // GPT-4o Mini - Fast and affordable
+  // GPT-4o Mini - Best value OpenAI
   'gpt-4o-mini': {
     id: 'gpt-4o-mini',
     name: 'GPT-4o Mini',
@@ -209,33 +209,7 @@ export const MODELS: Record<string, ModelDefinition> = {
     privacy_tiers: ['standard'],
   },
 
-  // GPT-5.5 - Latest OpenAI
-  'gpt-5.5': {
-    id: 'gpt-5.5',
-    name: 'GPT-5.5',
-    providers: ['openai'],
-    context_length: 200000,
-    input_price_per_m: 5.00,
-    output_price_per_m: 15.00,
-    supports_streaming: true,
-    supports_tools: true,
-    privacy_tiers: ['standard'],
-  },
-
-  // o1 - OpenAI reasoning
-  'o1': {
-    id: 'o1',
-    name: 'OpenAI o1',
-    providers: ['openai'],
-    context_length: 200000,
-    input_price_per_m: 15.00,
-    output_price_per_m: 60.00,
-    supports_streaming: true,
-    supports_tools: true,
-    privacy_tiers: ['standard'],
-  },
-
-  // o3-mini - Fast reasoning
+  // o3-mini - Affordable reasoning
   'o3-mini': {
     id: 'o3-mini',
     name: 'OpenAI o3-mini',
@@ -248,20 +222,7 @@ export const MODELS: Record<string, ModelDefinition> = {
     privacy_tiers: ['standard'],
   },
 
-  // Claude Opus 4 - Most capable Anthropic
-  'claude-opus-4': {
-    id: 'claude-opus-4',
-    name: 'Claude Opus 4',
-    providers: ['anthropic'],
-    context_length: 200000,
-    input_price_per_m: 15.00,
-    output_price_per_m: 75.00,
-    supports_streaming: true,
-    supports_tools: true,
-    privacy_tiers: ['standard'],
-  },
-
-  // Claude Sonnet 4 - Best balance
+  // Claude Sonnet 4 - Best balance of capability and cost
   'claude-sonnet-4': {
     id: 'claude-sonnet-4',
     name: 'Claude Sonnet 4',
@@ -282,32 +243,6 @@ export const MODELS: Record<string, ModelDefinition> = {
     context_length: 200000,
     input_price_per_m: 0.80,
     output_price_per_m: 4.00,
-    supports_streaming: true,
-    supports_tools: true,
-    privacy_tiers: ['standard'],
-  },
-
-  // Gemini 2.0 Pro - Google's best
-  'gemini-2.0-pro': {
-    id: 'gemini-2.0-pro',
-    name: 'Gemini 2.0 Pro',
-    providers: ['google'],
-    context_length: 2000000,
-    input_price_per_m: 1.25,
-    output_price_per_m: 5.00,
-    supports_streaming: true,
-    supports_tools: true,
-    privacy_tiers: ['standard'],
-  },
-
-  // Gemini 2.0 Flash - Fast
-  'gemini-2.0-flash': {
-    id: 'gemini-2.0-flash',
-    name: 'Gemini 2.0 Flash',
-    providers: ['google'],
-    context_length: 1000000,
-    input_price_per_m: 0.10,
-    output_price_per_m: 0.40,
     supports_streaming: true,
     supports_tools: true,
     privacy_tiers: ['standard'],

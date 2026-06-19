@@ -109,18 +109,14 @@ export const MODEL_MAPPINGS: Record<ProviderId, Record<string, string>> = {
   openai: {
     'gpt-4o': 'gpt-4o',
     'gpt-4o-mini': 'gpt-4o-mini',
-    'gpt-5.5': 'gpt-5.5',
-    'o1': 'o1',
     'o3-mini': 'o3-mini',
   },
   anthropic: {
-    'claude-opus-4': 'claude-opus-4-20250514',
     'claude-sonnet-4': 'claude-sonnet-4-20250514',
     'claude-haiku-3.5': 'claude-3-5-haiku-20241022',
   },
   google: {
-    'gemini-2.0-pro': 'gemini-2.0-pro',
-    'gemini-2.0-flash': 'gemini-2.0-flash',
+    // No models currently enabled
   },
   phala: {
     'llama-4-maverick': 'llama-4-maverick',
