@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #050507;
+  --bg-elev: #0c0c12;
+  --border: rgba(255, 255, 255, 0.08);
+  --text: #EDEDF2;
+  --text-dim: #9A9AA8;
+
+  /* Aurora accents */
+  --aurora-blue: #2536FF;
+  --aurora-violet: #6A3CFF;
+  --aurora-magenta: #C44BD6;
+  --aurora-cyan: #4FD1E0;
+  --aurora-green: #8FCF9A;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: 'Geist', 'Inter', system-ui, sans-serif;
+}
+
+code, pre {
+  font-family: 'Geist Mono', 'JetBrains Mono', monospace;
+}
