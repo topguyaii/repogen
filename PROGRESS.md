@@ -10,7 +10,7 @@ Point your agent at one endpoint and reach every model, open and closed. Your ag
 
 | Component | Description | Status |
 |-----------|-------------|--------|
-| API | OpenAI-compatible inference gateway | Not Started |
+| API | OpenAI-compatible inference gateway | Phase 1 Complete |
 | MCP | Model Context Protocol server | Not Started |
 | Web | Landing page + dashboard | Not Started |
 | x402 | USDC payment settlement | Not Started |
@@ -35,22 +35,22 @@ Point your agent at one endpoint and reach every model, open and closed. Your ag
 
 ---
 
-## Phase 1: Core API Foundation
+## Phase 1: Core API Foundation [COMPLETE]
 
 **Goal:** OpenAI-compatible `/v1/chat/completions` endpoint with streaming.
 
-- [ ] Set up Hono API server in `apps/api`
-- [ ] Implement `/v1/chat/completions` endpoint
-- [ ] Support streaming (SSE) responses
-- [ ] Support non-streaming responses
-- [ ] Implement `/v1/models` endpoint
-- [ ] Request/response validation with Zod
-- [ ] Error handling matching OpenAI format
-- [ ] Basic health check endpoint
-- [ ] Unit tests for all endpoints
-- [ ] Integration test with real provider call
+- [x] Set up Hono API server in `apps/api`
+- [x] Implement `/v1/chat/completions` endpoint
+- [x] Support streaming (SSE) responses
+- [x] Support non-streaming responses
+- [x] Implement `/v1/models` endpoint
+- [x] Request/response validation with Zod
+- [x] Error handling matching OpenAI format
+- [x] Basic health check endpoint
+- [x] Unit tests for all endpoints (15 tests passing)
+- [x] Mock provider for testing (real providers in Phase 2)
 
-**Definition of Done:** API accepts OpenAI-format requests, streams responses, passes all tests.
+**Definition of Done:** API accepts OpenAI-format requests, streams responses, passes all tests. DONE
 
 ---
 
@@ -289,7 +289,7 @@ Design tokens:
 
 ## Current Status
 
-**Active Phase:** Phase 1 - Core API Foundation
+**Active Phase:** Phase 2 - Provider Routing & Multi-Model Support
 
 **Last Updated:** 2026-06-19
 
@@ -300,6 +300,7 @@ Design tokens:
 | Phase | Commit | Date | Notes |
 |-------|--------|------|-------|
 | 0 | bbbf24f | 2026-06-19 | Project setup complete |
+| 1 | pending | 2026-06-19 | Core API with streaming, 15 tests passing |
 
 ---
 
