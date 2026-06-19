@@ -1,17 +1,32 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { app } from '../app'
+import { ensureTestKey, clearAllKeys } from '../auth/api-key'
+import { resetAllBudgets } from '../budget/service'
 
 describe('POST /v1/chat/completions', () => {
+  const TEST_API_KEY = 'rg_test_development_key_for_testing_only'
+
   const validRequest = {
     model: 'kimi-k2.7',
     messages: [{ role: 'user', content: 'Hello' }],
   }
 
+  const authHeaders = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${TEST_API_KEY}`,
+  }
+
+  beforeEach(() => {
+    clearAllKeys()
+    resetAllBudgets()
+    ensureTestKey()
+  })
+
   describe('non-streaming', () => {
     it('returns a valid completion', async () => {
       const res = await app.request('/v1/chat/completions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify(validRequest),
       })
 
@@ -32,7 +47,7 @@ describe('POST /v1/chat/completions', () => {
     it('includes repogen extensions', async () => {
       const res = await app.request('/v1/chat/completions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify(validRequest),
       })
 
@@ -45,7 +60,7 @@ describe('POST /v1/chat/completions', () => {
     it('respects privacy_tier parameter', async () => {
       const res = await app.request('/v1/chat/completions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify({ ...validRequest, privacy_tier: 'no-log' }),
       })
 
@@ -58,7 +73,7 @@ describe('POST /v1/chat/completions', () => {
     it('returns SSE stream', async () => {
       const res = await app.request('/v1/chat/completions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify({ ...validRequest, stream: true }),
       })
 
@@ -89,7 +104,7 @@ describe('POST /v1/chat/completions', () => {
     it('rejects missing model', async () => {
       const res = await app.request('/v1/chat/completions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify({ messages: [{ role: 'user', content: 'Hi' }] }),
       })
 
@@ -101,7 +116,7 @@ describe('POST /v1/chat/completions', () => {
     it('rejects empty messages', async () => {
       const res = await app.request('/v1/chat/completions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify({ model: 'kimi-k2.7', messages: [] }),
       })
 
@@ -113,7 +128,7 @@ describe('POST /v1/chat/completions', () => {
     it('rejects unknown model', async () => {
       const res = await app.request('/v1/chat/completions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify({
           model: 'nonexistent-model',
           messages: [{ role: 'user', content: 'Hi' }],
@@ -129,7 +144,7 @@ describe('POST /v1/chat/completions', () => {
     it('rejects invalid temperature', async () => {
       const res = await app.request('/v1/chat/completions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify({ ...validRequest, temperature: 3 }),
       })
 
@@ -139,7 +154,7 @@ describe('POST /v1/chat/completions', () => {
     it('rejects unsupported privacy tier for model', async () => {
       const res = await app.request('/v1/chat/completions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify({
           model: 'gpt-4o', // GPT-4o only supports 'standard'
           messages: [{ role: 'user', content: 'Hi' }],
@@ -150,6 +165,33 @@ describe('POST /v1/chat/completions', () => {
       expect(res.status).toBe(400)
       const json = await res.json()
       expect(json.error.message).toContain('privacy tier')
+    })
+  })
+
+  describe('authentication', () => {
+    it('rejects requests without auth header', async () => {
+      const res = await app.request('/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(validRequest),
+      })
+
+      expect(res.status).toBe(401)
+      const json = await res.json()
+      expect(json.error.type).toBe('authentication_error')
+    })
+
+    it('rejects requests with invalid API key', async () => {
+      const res = await app.request('/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer rg_test_invalid_key_12345678901234',
+        },
+        body: JSON.stringify(validRequest),
+      })
+
+      expect(res.status).toBe(401)
     })
   })
 })

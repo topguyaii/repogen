@@ -6,6 +6,7 @@ import { Errors } from '../middleware/error-handler'
 import { generateCompletionId, createSSEStream, sseData, sseDone, createChunk, createInitialChunk } from '../lib/stream'
 import { selectProvider, executeWithFailover, executeStreamWithFailover } from '../router'
 import type { RoutingContext } from '../adapters/types'
+import { finalizeBudgetForRequest, releaseBudgetForRequest } from '../budget'
 
 const app = new Hono()
 
@@ -84,11 +85,16 @@ app.post(
 
     // Use mock provider in test mode
     if (isTestMode()) {
-      const { generateMockResponse, generateMockStream } = await import('../lib/mock-provider')
+      const { generateMockResponse, generateMockStream, countTokens } = await import('../lib/mock-provider')
 
       if (request.stream) {
         const contentStream = generateMockStream(request)
         const sseStream = createSSEStream(completionId, request.model, contentStream)
+
+        // Finalize budget with estimated cost (mock mode)
+        const estimatedCost = 0.001 // Small mock cost
+        await finalizeBudgetForRequest(c, estimatedCost)
+
         return new Response(sseStream, {
           headers: {
             'Content-Type': 'text/event-stream',
@@ -99,6 +105,15 @@ app.post(
       }
 
       const { content, promptTokens, completionTokens } = await generateMockResponse(request)
+
+      // Calculate mock cost
+      const inputCost = (promptTokens / 1_000_000) * model.input_price_per_m
+      const outputCost = (completionTokens / 1_000_000) * model.output_price_per_m
+      const totalCost = inputCost + outputCost
+
+      // Finalize budget with actual cost
+      await finalizeBudgetForRequest(c, totalCost)
+
       const response: ChatCompletionResponse = {
         id: completionId,
         object: 'chat.completion',
@@ -117,7 +132,7 @@ app.post(
         repogen: {
           provider: 'together',
           privacy_tier: request.privacy_tier || 'standard',
-          cost_usd: 0,
+          cost_usd: totalCost,
         },
       }
       return c.json(response)
@@ -126,6 +141,7 @@ app.post(
     // Handle streaming response
     if (request.stream) {
       const encoder = new TextEncoder()
+      let totalCost = 0
 
       const stream = new ReadableStream({
         async start(controller) {
@@ -135,6 +151,7 @@ app.post(
             controller.enqueue(encoder.encode(sseData(JSON.stringify(initialChunk))))
 
             let providerId: ProviderId = 'together'
+            let totalTokens = 0
 
             // Stream from provider with failover
             const streamGenerator = executeStreamWithFailover(
@@ -146,6 +163,7 @@ app.post(
               providerId = chunk.providerId
 
               if (chunk.content) {
+                totalTokens += Math.ceil(chunk.content.length / 4) // Rough token estimate
                 const sseChunk = createChunk(completionId, request.model, chunk.content)
                 controller.enqueue(encoder.encode(sseData(JSON.stringify(sseChunk))))
               }
@@ -156,10 +174,18 @@ app.post(
               }
             }
 
+            // Estimate cost for streaming (rough estimate based on output tokens)
+            totalCost = (totalTokens / 1_000_000) * model.output_price_per_m
+
+            // Finalize budget
+            await finalizeBudgetForRequest(c, totalCost)
+
             controller.enqueue(encoder.encode(sseDone()))
             controller.close()
           } catch (error) {
             console.error('Streaming error:', error)
+            // Release budget on error
+            await releaseBudgetForRequest(c)
             controller.error(error)
           }
         },
@@ -176,48 +202,58 @@ app.post(
     }
 
     // Handle non-streaming response with failover
-    const { response: adapterResponse, providerId } = await executeWithFailover(
-      routingContext,
-      (provider) => provider.complete(request)
-    )
+    try {
+      const { response: adapterResponse, providerId } = await executeWithFailover(
+        routingContext,
+        (provider) => provider.complete(request)
+      )
 
-    // Calculate cost
-    const inputCost = (adapterResponse.promptTokens / 1_000_000) * model.input_price_per_m
-    const outputCost = (adapterResponse.completionTokens / 1_000_000) * model.output_price_per_m
-    const totalCost = inputCost + outputCost
+      // Calculate cost
+      const inputCost = (adapterResponse.promptTokens / 1_000_000) * model.input_price_per_m
+      const outputCost = (adapterResponse.completionTokens / 1_000_000) * model.output_price_per_m
+      const totalCost = inputCost + outputCost
 
-    const response: ChatCompletionResponse = {
-      id: completionId,
-      object: 'chat.completion',
-      created: Math.floor(Date.now() / 1000),
-      model: request.model,
-      choices: [
-        {
-          index: 0,
-          message: {
-            role: 'assistant',
-            content: adapterResponse.content,
+      // Finalize budget with actual cost
+      await finalizeBudgetForRequest(c, totalCost)
+
+      const response: ChatCompletionResponse = {
+        id: completionId,
+        object: 'chat.completion',
+        created: Math.floor(Date.now() / 1000),
+        model: request.model,
+        choices: [
+          {
+            index: 0,
+            message: {
+              role: 'assistant',
+              content: adapterResponse.content,
+            },
+            finish_reason: adapterResponse.finishReason,
           },
-          finish_reason: adapterResponse.finishReason,
+        ],
+        usage: {
+          prompt_tokens: adapterResponse.promptTokens,
+          completion_tokens: adapterResponse.completionTokens,
+          total_tokens: adapterResponse.promptTokens + adapterResponse.completionTokens,
         },
-      ],
-      usage: {
-        prompt_tokens: adapterResponse.promptTokens,
-        completion_tokens: adapterResponse.completionTokens,
-        total_tokens: adapterResponse.promptTokens + adapterResponse.completionTokens,
-      },
-      repogen: {
-        provider: providerId,
-        privacy_tier: request.privacy_tier || 'standard',
-        cost_usd: totalCost,
-      },
+        repogen: {
+          provider: providerId,
+          privacy_tier: request.privacy_tier || 'standard',
+          cost_usd: totalCost,
+        },
+      }
+
+      // Add provider latency header
+      c.header('X-Repogen-Provider', providerId)
+      c.header('X-Repogen-Latency', String(adapterResponse.providerLatencyMs))
+      c.header('X-Repogen-Cost', totalCost.toFixed(6))
+
+      return c.json(response)
+    } catch (error) {
+      // Release budget on error
+      await releaseBudgetForRequest(c)
+      throw error
     }
-
-    // Add provider latency header
-    c.header('X-Repogen-Provider', providerId)
-    c.header('X-Repogen-Latency', String(adapterResponse.providerLatencyMs))
-
-    return c.json(response)
   }
 )
 
