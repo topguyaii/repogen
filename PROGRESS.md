@@ -316,7 +316,7 @@ Design tokens:
 | 1 | f130182 | 2026-06-19 | Core API with streaming, 15 tests passing |
 | 2 | 25dc16b | 2026-06-19 | Provider routing, circuit breaker, 34 tests |
 | 3 | 5b9f858 | 2026-06-19 | Budget system, auth, 52 tests passing |
-| 4 | pending | 2026-06-19 | USDC payments with Privy managed wallets |
+| 4 | 8153d9a | 2026-06-19 | USDC payments with Privy managed wallets |
 
 ---
 
