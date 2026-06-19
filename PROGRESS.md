@@ -300,7 +300,7 @@ Design tokens:
 | Phase | Commit | Date | Notes |
 |-------|--------|------|-------|
 | 0 | bbbf24f | 2026-06-19 | Project setup complete |
-| 1 | pending | 2026-06-19 | Core API with streaming, 15 tests passing |
+| 1 | f130182 | 2026-06-19 | Core API with streaming, 15 tests passing |
 
 ---
 
