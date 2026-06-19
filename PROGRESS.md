@@ -18,7 +18,7 @@ Point your agent at one endpoint and reach every model, open and closed. Your ag
 
 ---
 
-## Phase 0: Project Setup
+## Phase 0: Project Setup [COMPLETE]
 
 **Goal:** Repository structure, tooling, and configuration.
 
@@ -31,7 +31,7 @@ Point your agent at one endpoint and reach every model, open and closed. Your ag
 - [x] Create .gitignore
 - [x] Create this PROGRESS.md
 
-**Definition of Done:** Clean repo with build tooling, ready for Phase 1.
+**Definition of Done:** Clean repo with build tooling, ready for Phase 1. DONE
 
 ---
 
@@ -289,7 +289,7 @@ Design tokens:
 
 ## Current Status
 
-**Active Phase:** Phase 0 - Project Setup
+**Active Phase:** Phase 1 - Core API Foundation
 
 **Last Updated:** 2026-06-19
 
@@ -299,7 +299,7 @@ Design tokens:
 
 | Phase | Commit | Date | Notes |
 |-------|--------|------|-------|
-| 0 | - | - | In progress |
+| 0 | bbbf24f | 2026-06-19 | Project setup complete |
 
 ---
 
