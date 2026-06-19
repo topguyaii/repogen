@@ -3,7 +3,7 @@ import { app } from '../app'
 
 describe('POST /v1/chat/completions', () => {
   const validRequest = {
-    model: 'llama-3.3-70b',
+    model: 'kimi-k2.7',
     messages: [{ role: 'user', content: 'Hello' }],
   }
 
@@ -19,7 +19,7 @@ describe('POST /v1/chat/completions', () => {
       const json = await res.json()
 
       expect(json.object).toBe('chat.completion')
-      expect(json.model).toBe('llama-3.3-70b')
+      expect(json.model).toBe('kimi-k2.7')
       expect(json.choices).toHaveLength(1)
       expect(json.choices[0].message.role).toBe('assistant')
       expect(json.choices[0].message.content).toBeTruthy()
@@ -102,7 +102,7 @@ describe('POST /v1/chat/completions', () => {
       const res = await app.request('/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: 'llama-3.3-70b', messages: [] }),
+        body: JSON.stringify({ model: 'kimi-k2.7', messages: [] }),
       })
 
       expect(res.status).toBe(400)

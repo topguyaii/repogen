@@ -27,18 +27,18 @@ describe('GET /v1/models', () => {
     const json = await res.json()
 
     const modelIds = json.data.map((m: { id: string }) => m.id)
-    expect(modelIds).toContain('llama-3.3-70b')
+    expect(modelIds).toContain('kimi-k2.7')
     expect(modelIds).toContain('gpt-4o')
   })
 })
 
 describe('GET /v1/models/:model', () => {
   it('returns a specific model', async () => {
-    const res = await app.request('/v1/models/llama-3.3-70b')
+    const res = await app.request('/v1/models/kimi-k2.7')
     expect(res.status).toBe(200)
 
     const json = await res.json()
-    expect(json.id).toBe('llama-3.3-70b')
+    expect(json.id).toBe('kimi-k2.7')
     expect(json.object).toBe('model')
     expect(json.repogen.context_length).toBe(128000)
   })
