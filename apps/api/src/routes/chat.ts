@@ -30,7 +30,7 @@ const ChatRequestSchema = z.object({
   // repogen extensions
   privacy_tier: z.enum(['standard', 'no-log', 'tee']).optional().default('standard'),
   routing: z.enum(['cheapest', 'fastest', 'specific']).optional().default('cheapest'),
-  preferred_provider: z.enum(['together', 'fireworks', 'groq', 'openai', 'anthropic', 'phala']).optional(),
+  preferred_provider: z.enum(['together', 'fireworks', 'groq', 'openai', 'anthropic', 'google', 'phala']).optional(),
 })
 
 // POST /v1/chat/completions

@@ -9,7 +9,7 @@ export const RoutingStrategy = z.enum(['cheapest', 'fastest', 'specific'])
 export type RoutingStrategy = z.infer<typeof RoutingStrategy>
 
 // Provider IDs
-export const ProviderId = z.enum(['together', 'fireworks', 'groq', 'openai', 'anthropic', 'phala'])
+export const ProviderId = z.enum(['together', 'fireworks', 'groq', 'openai', 'anthropic', 'google', 'phala'])
 export type ProviderId = z.infer<typeof ProviderId>
 
 // OpenAI-compatible message format
