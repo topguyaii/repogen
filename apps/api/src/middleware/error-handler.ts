@@ -46,7 +46,7 @@ export class APIError extends Error {
 
 // Common error factories
 export const Errors = {
-  invalidRequest: (message: string, param?: string) =>
+  invalidRequest: (message: string, param?: string | null) =>
     new APIError(message, 400, 'invalid_request_error', param),
 
   authentication: (message = 'Invalid API key') =>
@@ -63,6 +63,12 @@ export const Errors = {
 
   insufficientQuota: (message = 'Insufficient budget') =>
     new APIError(message, 402, 'insufficient_quota', null, 'insufficient_quota'),
+
+  insufficientBalance: (message = 'Insufficient USDC balance. Please top up your wallet.') =>
+    new APIError(message, 402, 'insufficient_quota', null, 'insufficient_balance'),
+
+  internalError: (message = 'Internal server error') =>
+    new APIError(message, 500, 'server_error'),
 
   server: (message = 'Internal server error') =>
     new APIError(message, 500, 'server_error'),

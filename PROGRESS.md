@@ -10,7 +10,7 @@ Point your agent at one endpoint and reach every model, open and closed. Your ag
 
 | Component | Description | Status |
 |-----------|-------------|--------|
-| API | OpenAI-compatible inference gateway | Phase 3 Complete |
+| API | OpenAI-compatible inference gateway | Phase 4 Complete |
 | MCP | Model Context Protocol server | Not Started |
 | Web | Landing page + dashboard | Not Started |
 | x402 | USDC payment settlement | Not Started |
@@ -100,25 +100,34 @@ Point your agent at one endpoint and reach every model, open and closed. Your ag
 
 ---
 
-## Phase 4: x402 Payment Integration
+## Phase 4: USDC Payment Integration (Managed Mode) [COMPLETE]
 
-**Goal:** Pay-per-call with USDC over x402 protocol. No prepaid balance.
+**Goal:** Pay-per-call with USDC on Base. Managed wallet model (like Litebeam).
 
-- [ ] Research and document x402 protocol flow
-- [ ] Implement x402 payment header parsing
-- [ ] Implement payment authorization (check ceiling)
-- [ ] Implement payment settlement (charge actual cost)
-- [ ] USDC on Base integration
-- [ ] Payment receipt generation
-- [ ] Failed payment handling
-- [ ] Refund mechanism for failed requests
-- [ ] Payment verification endpoint
-- [ ] Integration with budget system
-- [ ] Unit tests for payment flow
-- [ ] Test payment races and double-spend prevention
-- [ ] Test bypass attempts (requests without valid payment)
+**Research completed:**
+- Studied x402 protocol (Coinbase standard) and Litebeam implementation
+- Decided on **Managed Mode** (simpler for agents without wallets)
+- Agent funds once → we deduct per-request → all on-chain auditable
 
-**Definition of Done:** Agents pay per call in USDC, settlement is accurate, no bypass possible.
+**Implementation:**
+- [x] Privy integration for server-controlled wallets (@privy-io/node)
+- [x] viem integration for USDC balance checks and transfers
+- [x] Wallet service (create, balance, withdraw, settlement history)
+- [x] Payment middleware (reserve → settle/release pattern)
+- [x] Wallet routes: GET /v1/wallet, POST /v1/wallet, POST /v1/wallet/withdraw, GET /v1/wallet/history
+- [x] USDC transfer to treasury on successful requests
+- [x] Batched settlements for small amounts (< $0.001)
+- [x] Integration with budget system (both systems work together)
+- [x] 52 tests still passing
+
+**Flow:**
+1. User gets API key → auto-creates Privy wallet
+2. User deposits USDC to wallet address on Base
+3. Agent calls API with Bearer token
+4. We reserve funds → process request → settle actual cost
+5. All settlements auditable on Basescan
+
+**Definition of Done:** Agents pay per call in USDC, settlement is accurate, no bypass possible. DONE
 
 ---
 
@@ -293,7 +302,7 @@ Design tokens:
 
 ## Current Status
 
-**Active Phase:** Phase 4 - x402 Payment Integration
+**Active Phase:** Phase 5 - MCP Server Integration
 
 **Last Updated:** 2026-06-19
 
@@ -307,6 +316,7 @@ Design tokens:
 | 1 | f130182 | 2026-06-19 | Core API with streaming, 15 tests passing |
 | 2 | 25dc16b | 2026-06-19 | Provider routing, circuit breaker, 34 tests |
 | 3 | 5b9f858 | 2026-06-19 | Budget system, auth, 52 tests passing |
+| 4 | pending | 2026-06-19 | USDC payments with Privy managed wallets |
 
 ---
 

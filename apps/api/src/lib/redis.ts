@@ -24,6 +24,7 @@ export function getRedis(): Redis {
 // For testing - create a mock Redis that works in-memory
 export class MockRedis {
   private store: Map<string, string> = new Map()
+  private lists: Map<string, string[]> = new Map()
   private expiry: Map<string, number> = new Map()
 
   async get(key: string): Promise<string | null> {
@@ -148,8 +149,31 @@ export class MockRedis {
     return 1
   }
 
+  // List operations
+  async lpush(key: string, ...values: string[]): Promise<number> {
+    const list = this.lists.get(key) || []
+    list.unshift(...values)
+    this.lists.set(key, list)
+    return list.length
+  }
+
+  async lrange(key: string, start: number, stop: number): Promise<string[]> {
+    const list = this.lists.get(key) || []
+    // Redis uses -1 for last element
+    const end = stop < 0 ? list.length + stop + 1 : stop + 1
+    return list.slice(start, end)
+  }
+
+  async ltrim(key: string, start: number, stop: number): Promise<'OK'> {
+    const list = this.lists.get(key) || []
+    const end = stop < 0 ? list.length + stop + 1 : stop + 1
+    this.lists.set(key, list.slice(start, end))
+    return 'OK'
+  }
+
   async quit(): Promise<'OK'> {
     this.store.clear()
+    this.lists.clear()
     this.expiry.clear()
     return 'OK'
   }

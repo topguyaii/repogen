@@ -7,6 +7,8 @@ import { generateCompletionId, createSSEStream, sseData, sseDone, createChunk, c
 import { selectProvider, executeWithFailover, executeStreamWithFailover } from '../router'
 import type { RoutingContext } from '../adapters/types'
 import { finalizeBudgetForRequest, releaseBudgetForRequest } from '../budget'
+import { settleFunds, releaseFunds } from '../wallet'
+import type { APIKeyData } from '../auth/api-key'
 
 const app = new Hono()
 
@@ -40,6 +42,36 @@ function isTestMode(): boolean {
   return !process.env.TOGETHER_API_KEY &&
          !process.env.FIREWORKS_API_KEY &&
          !process.env.OPENAI_API_KEY
+}
+
+// Helper to finalize both budget and payment
+async function finalizePayment(c: any, totalCost: number) {
+  // Finalize budget tracking
+  await finalizeBudgetForRequest(c, totalCost)
+
+  // Settle wallet payment (deduct from user's wallet)
+  const apiKey = c.get('apiKey') as APIKeyData | undefined
+  const requestId = c.get('requestId') as string | undefined
+  const paymentReserved = c.get('paymentReserved') as boolean | undefined
+
+  if (apiKey && requestId && paymentReserved) {
+    await settleFunds(apiKey.id, requestId, totalCost)
+  }
+}
+
+// Helper to release both budget and payment on error
+async function releasePayment(c: any) {
+  // Release budget
+  await releaseBudgetForRequest(c)
+
+  // Release wallet reservation
+  const apiKey = c.get('apiKey') as APIKeyData | undefined
+  const requestId = c.get('requestId') as string | undefined
+  const paymentReserved = c.get('paymentReserved') as boolean | undefined
+
+  if (apiKey && requestId && paymentReserved) {
+    await releaseFunds(apiKey.id, requestId)
+  }
 }
 
 // POST /v1/chat/completions
@@ -93,7 +125,7 @@ app.post(
 
         // Finalize budget with estimated cost (mock mode)
         const estimatedCost = 0.001 // Small mock cost
-        await finalizeBudgetForRequest(c, estimatedCost)
+        await finalizePayment(c, estimatedCost)
 
         return new Response(sseStream, {
           headers: {
@@ -112,7 +144,7 @@ app.post(
       const totalCost = inputCost + outputCost
 
       // Finalize budget with actual cost
-      await finalizeBudgetForRequest(c, totalCost)
+      await finalizePayment(c, totalCost)
 
       const response: ChatCompletionResponse = {
         id: completionId,
@@ -178,14 +210,14 @@ app.post(
             totalCost = (totalTokens / 1_000_000) * model.output_price_per_m
 
             // Finalize budget
-            await finalizeBudgetForRequest(c, totalCost)
+            await finalizePayment(c, totalCost)
 
             controller.enqueue(encoder.encode(sseDone()))
             controller.close()
           } catch (error) {
             console.error('Streaming error:', error)
             // Release budget on error
-            await releaseBudgetForRequest(c)
+            await releasePayment(c)
             controller.error(error)
           }
         },
@@ -214,7 +246,7 @@ app.post(
       const totalCost = inputCost + outputCost
 
       // Finalize budget with actual cost
-      await finalizeBudgetForRequest(c, totalCost)
+      await finalizePayment(c, totalCost)
 
       const response: ChatCompletionResponse = {
         id: completionId,
@@ -251,7 +283,7 @@ app.post(
       return c.json(response)
     } catch (error) {
       // Release budget on error
-      await releaseBudgetForRequest(c)
+      await releasePayment(c)
       throw error
     }
   }
