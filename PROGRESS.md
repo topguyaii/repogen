@@ -301,7 +301,7 @@ Design tokens:
 |-------|--------|------|-------|
 | 0 | bbbf24f | 2026-06-19 | Project setup complete |
 | 1 | f130182 | 2026-06-19 | Core API with streaming, 15 tests passing |
-| 2 | pending | 2026-06-19 | Provider routing, circuit breaker, 34 tests |
+| 2 | 25dc16b | 2026-06-19 | Provider routing, circuit breaker, 34 tests |
 
 ---
 
