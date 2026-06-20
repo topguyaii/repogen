@@ -98,7 +98,7 @@ This is incompatible with autonomous agents, privacy-conscious users, and open i
 from openai import OpenAI
 
 client = OpenAI(
-    base_url="https://api.repogen.dev/v1",
+    base_url="https://api.repogen.xyz/v1",
     api_key="rg_..."  # Your repogen API key
 )
 
@@ -127,9 +127,9 @@ Your GPU processes inference requests, you earn USDC automatically.
 ### Use the API
 
 ```bash
-# Get your API key at https://repogen.dev
+# Get your API key at https://repogen.xyz
 
-curl https://api.repogen.dev/v1/chat/completions \
+curl https://api.repogen.xyz/v1/chat/completions \
   -H "Authorization: Bearer rg_your_key" \
   -H "Content-Type: application/json" \
   -d '{
@@ -278,7 +278,7 @@ See [ROADMAP.md](./ROADMAP.md) for details.
 ### Setup
 
 ```bash
-git clone https://github.com/repogen/repogen.git
+git clone https://github.com/topguyaii/repogen.git
 cd repogen
 
 pnpm install
@@ -296,7 +296,7 @@ pnpm dev
 - **Non-custodial**: You control your wallet and keys
 - **Escrow contract**: Audited, minimal, immutable
 
-Report vulnerabilities: security@repogen.dev
+Report vulnerabilities: security@repogen.xyz
 
 ---
 
@@ -308,9 +308,9 @@ We welcome contributions! See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## Community
 
-- **Twitter**: [@repogen_ai](https://twitter.com/repogen_ai)
-- **Discord**: [discord.gg/repogen](https://discord.gg/repogen)
-- **GitHub**: [github.com/repogen](https://github.com/repogen)
+- **Website**: [repogen.xyz](https://repogen.xyz)
+- **Twitter**: [@repogen](https://x.com/repogen)
+- **GitHub**: [github.com/topguyaii/repogen](https://github.com/topguyaii/repogen)
 
 ---
 
