@@ -1,86 +1,59 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useWallets } from '@privy-io/react-auth'
-import { createPublicClient, http, formatUnits, parseUnits, encodeFunctionData } from 'viem'
+import { useAccount, useReadContract, useSendTransaction, useWaitForTransactionReceipt } from 'wagmi'
+import { formatUnits, parseUnits, encodeFunctionData, erc20Abi } from 'viem'
 import { base } from 'viem/chains'
 
 // USDC on Base
-const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'
+const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as const
 const USDC_DECIMALS = 6
-
-// Minimal ERC20 ABI for balanceOf and transfer
-const ERC20_ABI = [
-  {
-    name: 'balanceOf',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [{ name: 'account', type: 'address' }],
-    outputs: [{ name: '', type: 'uint256' }],
-  },
-  {
-    name: 'transfer',
-    type: 'function',
-    stateMutability: 'nonpayable',
-    inputs: [
-      { name: 'to', type: 'address' },
-      { name: 'amount', type: 'uint256' },
-    ],
-    outputs: [{ name: '', type: 'bool' }],
-  },
-] as const
-
-const publicClient = createPublicClient({
-  chain: base,
-  transport: http(),
-})
 
 export default function BillingPage() {
   const [withdrawAmount, setWithdrawAmount] = useState('')
   const [withdrawAddress, setWithdrawAddress] = useState('')
   const [activeTab, setActiveTab] = useState<'deposit' | 'withdraw'>('deposit')
-  const [isLoading, setIsLoading] = useState(false)
-  const [usdcBalance, setUsdcBalance] = useState<string | null>(null)
-  const [txHash, setTxHash] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const { wallets } = useWallets()
 
-  const embeddedWallet = wallets.find((w) => w.walletClientType === 'privy')
-  const walletAddress = embeddedWallet?.address || ''
+  const { address } = useAccount()
 
-  // Fetch USDC balance
-  const fetchBalance = useCallback(async () => {
-    if (!walletAddress) return
+  // Fetch USDC balance using wagmi
+  const { data: usdcBalance, refetch: refetchBalance } = useReadContract({
+    address: USDC_ADDRESS,
+    abi: erc20Abi,
+    functionName: 'balanceOf',
+    args: address ? [address] : undefined,
+    chainId: base.id,
+  })
 
-    try {
-      const balance = await publicClient.readContract({
-        address: USDC_ADDRESS,
-        abi: ERC20_ABI,
-        functionName: 'balanceOf',
-        args: [walletAddress as `0x${string}`],
-      })
-      setUsdcBalance(formatUnits(balance, USDC_DECIMALS))
-    } catch (err) {
-      console.error('Failed to fetch balance:', err)
-      setUsdcBalance('0.00')
-    }
-  }, [walletAddress])
+  // Send transaction hook
+  const {
+    data: txHash,
+    sendTransaction,
+    isPending: isSending,
+    reset: resetTx
+  } = useSendTransaction()
 
+  // Wait for transaction confirmation
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
+    hash: txHash,
+  })
+
+  // Refresh balance after confirmation
   useEffect(() => {
-    fetchBalance()
-    // Refresh balance every 30 seconds
-    const interval = setInterval(fetchBalance, 30000)
-    return () => clearInterval(interval)
-  }, [fetchBalance])
-
-  const copyAddress = () => {
-    if (walletAddress) {
-      navigator.clipboard.writeText(walletAddress)
+    if (isConfirmed) {
+      refetchBalance()
     }
-  }
+  }, [isConfirmed, refetchBalance])
+
+  const copyAddress = useCallback(() => {
+    if (address) {
+      navigator.clipboard.writeText(address)
+    }
+  }, [address])
 
   const handleWithdraw = async () => {
-    if (!embeddedWallet || !withdrawAmount || !withdrawAddress) return
+    if (!address || !withdrawAmount || !withdrawAddress) return
 
     // Validate address
     if (!/^0x[a-fA-F0-9]{40}$/.test(withdrawAddress)) {
@@ -89,52 +62,38 @@ export default function BillingPage() {
     }
 
     const amount = parseFloat(withdrawAmount)
-    const balance = parseFloat(usdcBalance || '0')
+    const balance = usdcBalance ? parseFloat(formatUnits(usdcBalance, USDC_DECIMALS)) : 0
     if (amount > balance) {
       setError('Insufficient balance')
       return
     }
 
-    setIsLoading(true)
     setError(null)
-    setTxHash(null)
 
     try {
-      // Get the provider from the embedded wallet
-      const provider = await embeddedWallet.getEthereumProvider()
-
       // Encode the transfer call
       const data = encodeFunctionData({
-        abi: ERC20_ABI,
+        abi: erc20Abi,
         functionName: 'transfer',
         args: [withdrawAddress as `0x${string}`, parseUnits(withdrawAmount, USDC_DECIMALS)],
       })
 
       // Send transaction
-      const hash = await provider.request({
-        method: 'eth_sendTransaction',
-        params: [{
-          from: walletAddress,
-          to: USDC_ADDRESS,
-          data,
-        }],
+      sendTransaction({
+        to: USDC_ADDRESS,
+        data,
       })
-
-      setTxHash(hash as string)
-      setWithdrawAmount('')
-      setWithdrawAddress('')
-
-      // Refresh balance after a delay
-      setTimeout(fetchBalance, 5000)
     } catch (err) {
       console.error('Withdraw failed:', err)
       setError(err instanceof Error ? err.message : 'Withdrawal failed')
-    } finally {
-      setIsLoading(false)
     }
   }
 
-  const displayBalance = usdcBalance !== null ? parseFloat(usdcBalance).toFixed(2) : '...'
+  const displayBalance = usdcBalance
+    ? parseFloat(formatUnits(usdcBalance, USDC_DECIMALS)).toFixed(2)
+    : '...'
+
+  const isLoading = isSending || isConfirming
 
   return (
     <div className="max-w-2xl">
@@ -149,9 +108,9 @@ export default function BillingPage() {
           <div>
             <p className="text-sm text-white/50">Your Wallet (Base)</p>
             <p className="text-sm font-mono mt-1">
-              {walletAddress ? (
+              {address ? (
                 <span className="flex items-center gap-2">
-                  {walletAddress}
+                  {address}
                   <button
                     onClick={copyAddress}
                     className="p-1 hover:bg-white/10 rounded transition-colors"
@@ -165,7 +124,7 @@ export default function BillingPage() {
             </p>
           </div>
           <a
-            href={walletAddress ? `https://basescan.org/address/${walletAddress}` : '#'}
+            href={address ? `https://basescan.org/address/${address}` : '#'}
             target="_blank"
             rel="noopener noreferrer"
             className="text-xs text-white/50 hover:text-white transition-colors flex items-center gap-1"
@@ -185,7 +144,7 @@ export default function BillingPage() {
             <p className="text-xs text-white/40 mt-1">Available for API usage</p>
           </div>
           <button
-            onClick={fetchBalance}
+            onClick={() => refetchBalance()}
             className="p-2 hover:bg-white/10 rounded-lg transition-colors"
             title="Refresh balance"
           >
@@ -198,7 +157,7 @@ export default function BillingPage() {
       <div className="border border-white/10 rounded-xl bg-white/[0.02]">
         <div className="flex border-b border-white/10">
           <button
-            onClick={() => { setActiveTab('deposit'); setError(null); setTxHash(null); }}
+            onClick={() => { setActiveTab('deposit'); setError(null); resetTx(); }}
             className={`flex-1 py-3 text-sm font-medium transition-colors ${
               activeTab === 'deposit' ? 'text-white border-b-2 border-white' : 'text-white/50'
             }`}
@@ -206,7 +165,7 @@ export default function BillingPage() {
             Deposit
           </button>
           <button
-            onClick={() => { setActiveTab('withdraw'); setError(null); setTxHash(null); }}
+            onClick={() => { setActiveTab('withdraw'); setError(null); resetTx(); }}
             className={`flex-1 py-3 text-sm font-medium transition-colors ${
               activeTab === 'withdraw' ? 'text-white border-b-2 border-white' : 'text-white/50'
             }`}
@@ -226,11 +185,11 @@ export default function BillingPage() {
                 <p className="text-xs text-white/50 mb-2">Send USDC to:</p>
                 <div className="flex items-center gap-2">
                   <code className="text-sm font-mono text-white flex-1 break-all">
-                    {walletAddress || 'Loading...'}
+                    {address || 'Loading...'}
                   </code>
                   <button
                     onClick={copyAddress}
-                    disabled={!walletAddress}
+                    disabled={!address}
                     className="p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
                   >
                     <CopyIcon className="w-4 h-4 text-white/70" />
@@ -255,9 +214,9 @@ export default function BillingPage() {
                 </div>
               )}
 
-              {txHash && (
+              {isConfirmed && txHash && (
                 <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
-                  <p className="text-sm text-green-400">Withdrawal submitted!</p>
+                  <p className="text-sm text-green-400">Withdrawal confirmed!</p>
                   <a
                     href={`https://basescan.org/tx/${txHash}`}
                     target="_blank"
@@ -266,6 +225,18 @@ export default function BillingPage() {
                   >
                     View on BaseScan <ExternalIcon className="w-3 h-3" />
                   </a>
+                </div>
+              )}
+
+              {isSending && (
+                <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                  <p className="text-sm text-blue-400">Confirm transaction in your wallet...</p>
+                </div>
+              )}
+
+              {isConfirming && (
+                <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                  <p className="text-sm text-yellow-400">Waiting for confirmation...</p>
                 </div>
               )}
 
@@ -298,7 +269,7 @@ export default function BillingPage() {
 
               <button
                 onClick={handleWithdraw}
-                disabled={isLoading || !embeddedWallet || !withdrawAmount || !withdrawAddress}
+                disabled={isLoading || !address || !withdrawAmount || !withdrawAddress}
                 className="w-full py-3 bg-white text-black rounded-lg font-medium hover:bg-white/90 transition-colors disabled:opacity-50"
               >
                 {isLoading ? 'Processing...' : 'Withdraw'}

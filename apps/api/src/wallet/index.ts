@@ -1,3 +1,3 @@
 export * from './service'
-export * from './privy'
+export * from './chain'
 export * from './middleware'

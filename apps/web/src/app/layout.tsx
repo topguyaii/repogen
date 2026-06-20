@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { Playfair_Display } from 'next/font/google'
 import { JetBrains_Mono } from 'next/font/google'
-import { AuthProvider } from '@/providers/privy'
+import { Providers } from '@/providers'
 import './globals.css'
 
 const inter = Inter({
@@ -21,8 +21,8 @@ const playfair = Playfair_Display({
 })
 
 export const metadata: Metadata = {
-  title: 'repogen - The private inference layer for your agents',
-  description: 'Point your agent at one endpoint and reach every model, open and closed. Pay per call in USDC, no account, no logs.',
+  title: 'repogen - Decentralized AI Inference',
+  description: 'Decentralized AI inference. Community-owned compute. USDC payments on Base. No logs, ever.',
 }
 
 export default function RootLayout({
@@ -33,7 +33,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable} ${playfair.variable}`}>
       <body className="font-sans antialiased">
-        <AuthProvider>{children}</AuthProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   )

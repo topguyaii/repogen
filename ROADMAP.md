@@ -1,16 +1,15 @@
 # repogen Roadmap
 
-This document tracks the development progress of repogen, the decentralized inference layer for autonomous AI.
+Development roadmap for repogen, the decentralized AI inference network.
 
 ## Overview
 
-| Phase | Focus | Status | Timeline |
-|-------|-------|--------|----------|
-| 1 | Foundation | ✅ Complete | Done |
-| 2 | Decentralization | 🔄 In Progress | Week 1-2 |
-| 3 | Contributor Network | ⏳ Planned | Week 3-4 |
-| 4 | Network Growth | ⏳ Planned | Week 5-6 |
-| 5 | Production Launch | ⏳ Planned | Week 7-8 |
+| Phase | Focus | Status |
+|-------|-------|--------|
+| 1 | Foundation | ✅ Complete |
+| 2 | Network Infrastructure | 🔄 In Progress |
+| 3 | Contributor Network | ⏳ Planned |
+| 4 | Growth & Scale | ⏳ Planned |
 
 ---
 
@@ -18,365 +17,217 @@ This document tracks the development progress of repogen, the decentralized infe
 
 **Status: Complete**
 
-Core infrastructure for OpenAI-compatible API with USDC payments.
+Core API infrastructure with wallet-native authentication.
 
 ### Completed
 
 - [x] **API Server** (`apps/api`)
-  - [x] Hono HTTP server
+  - [x] OpenAI-compatible endpoints
   - [x] POST `/v1/chat/completions` (streaming SSE)
-  - [x] GET `/v1/models` (list available models)
+  - [x] GET `/v1/models`
   - [x] Request validation (Zod schemas)
-  - [x] Error handling (OpenAI format)
 
-- [x] **Authentication**
-  - [x] API key generation (`rg_live_*`, `rg_test_*`)
-  - [x] SHA-256 key hashing (no plaintext storage)
-  - [x] Bearer token middleware
+- [x] **Wallet-Native Auth**
+  - [x] RainbowKit integration
+  - [x] Sign-In with Ethereum (SIWE)
+  - [x] API key generation tied to wallet
+  - [x] SHA-256 key hashing
 
 - [x] **Budget System**
   - [x] Redis-backed spending limits
-  - [x] Daily/task/total limits
   - [x] Atomic reservations (Lua scripts)
   - [x] Concurrent request handling
-
-- [x] **Rate Limiting**
-  - [x] Per-key limits (60/min)
-  - [x] Per-IP limits (100/min)
-  - [x] Global limits (10k/min)
-  - [x] Key revocation
 
 - [x] **Privacy**
   - [x] Metadata-only logging
   - [x] Never store prompts/responses
-  - [x] Privacy tier routing
 
-- [x] **MCP Server** (`apps/mcp`)
+- [x] **MCP Server**
   - [x] `chat` tool
   - [x] `list_models` tool
   - [x] `get_balance` tool
-  - [x] HTTP transport
-
-- [x] **Testing**
-  - [x] 52+ test cases
-  - [x] Budget concurrency tests
-  - [x] Payment flow tests
-  - [x] Privacy verification tests
 
 ---
 
-## Phase 2: Decentralization 🔄
+## Phase 2: Network Infrastructure 🔄
 
 **Status: In Progress**
 
-Replace centralized providers with decentralized Petals network. Wallet-native authentication.
+Build the repogen coordinator and inference network.
 
-### Week 1: Wallet-Native Auth
+### Coordinator Service
 
-- [ ] **Remove Privy**
-  - [ ] Uninstall `@privy-io/react-auth`
-  - [ ] Uninstall `@privy-io/server-auth`
-  - [ ] Remove Privy provider from web app
-  - [ ] Remove Privy wallet service from API
+- [ ] **Node Registry**
+  - [ ] Node registration endpoint
+  - [ ] GPU specs submission
+  - [ ] Health monitoring
+  - [ ] Online/offline tracking
 
-- [ ] **RainbowKit Integration**
-  - [ ] Install `@rainbow-me/rainbowkit`
-  - [ ] Install `wagmi` and `viem`
-  - [ ] Configure Base chain
-  - [ ] Create wallet connect component
-  - [ ] Add USDC balance display
+- [ ] **Work Distribution**
+  - [ ] Request queue
+  - [ ] Node selection algorithm
+  - [ ] Load balancing
+  - [ ] Failover handling
 
-- [ ] **Sign-In with Ethereum (SIWE)**
-  - [ ] Install `siwe` package
-  - [ ] Create SIWE message generation
-  - [ ] Implement signature verification
-  - [ ] Generate API key on successful auth
-  - [ ] Store wallet → API key mapping
+- [ ] **Model Management**
+  - [ ] Model registry
+  - [ ] Node → model mapping
+  - [ ] Availability tracking
 
-- [ ] **Update Dashboard**
-  - [ ] Wallet connect button
-  - [ ] SIWE sign-in flow
-  - [ ] Display connected wallet
-  - [ ] Show USDC balance (on-chain read)
-  - [ ] API key display (post-auth)
+### Inference Protocol
 
-### Week 2: Petals Gateway
-
-- [ ] **Create `apps/petals-gateway/`**
-  - [ ] TypeScript service structure
-  - [ ] Python subprocess manager
-  - [ ] Inter-process communication
-  - [ ] Health check endpoint
-
-- [ ] **Python Bridge**
-  - [ ] Install Petals (`pip install petals`)
-  - [ ] Create `bridge.py` (stdin/stdout IPC)
-  - [ ] Model initialization
-  - [ ] Inference function
+- [ ] **Node Communication**
+  - [ ] WebSocket connection to coordinator
+  - [ ] Heartbeat mechanism
+  - [ ] Request/response protocol
   - [ ] Streaming support
 
-- [ ] **Gateway Routes**
-  - [ ] POST `/inference` - run inference
-  - [ ] GET `/health` - network status
-  - [ ] GET `/models` - available models
-
-- [ ] **Router Update**
-  - [ ] Remove centralized provider adapters
-  - [ ] Route all requests to Petals gateway
-  - [ ] Handle gateway errors gracefully
-  - [ ] Implement request queuing
-
-- [ ] **Network Health Monitor**
-  - [ ] Poll `health.petals.dev`
-  - [ ] Cache model availability
-  - [ ] Expose status endpoint
-  - [ ] Alert on network issues
+- [ ] **Security**
+  - [ ] Node authentication
+  - [ ] Request signing
+  - [ ] Response verification
 
 ### Deliverables
 
 | Deliverable | Description | Status |
 |-------------|-------------|--------|
-| Wallet auth | Connect wallet, sign message, get API key | ⏳ |
-| No Privy | Zero custodial wallet dependencies | ⏳ |
-| Petals gateway | Bridge to decentralized network | ⏳ |
-| First decentralized request | End-to-end via Petals | ⏳ |
+| Coordinator service | Central routing and coordination | ⏳ |
+| Node protocol | Communication between coordinator and nodes | ⏳ |
+| First inference | End-to-end request through network | ⏳ |
 
 ---
 
 ## Phase 3: Contributor Network ⏳
 
-**Status: Planned (Week 3-4)**
+**Status: Planned**
 
 Enable GPU owners to join the network and earn USDC.
 
-### Week 3: Contributor Node
+### Contributor Node (`@repogen/node`)
 
-- [ ] **Create `packages/node/`**
-  - [ ] CLI structure (`commander` or `yargs`)
+- [ ] **CLI Package**
+  - [ ] `npx @repogen/node start --wallet 0x...`
+  - [ ] `npx @repogen/node status`
+  - [ ] `npx @repogen/node earnings`
   - [ ] Configuration file support
-  - [ ] Logging (structured, levels)
 
-- [ ] **Node Registration**
-  - [ ] Connect to repogen coordinator
-  - [ ] Submit GPU specs
-  - [ ] Heartbeat mechanism
-  - [ ] Graceful shutdown
+- [ ] **GPU Detection**
+  - [ ] Auto-detect NVIDIA GPUs
+  - [ ] VRAM detection
+  - [ ] Capability assessment
 
-- [ ] **Petals Server Wrapper**
-  - [ ] Install Petals server
-  - [ ] Auto-detect GPU capabilities
-  - [ ] Select optimal model blocks
-  - [ ] Start/stop management
+- [ ] **Model Loading**
+  - [ ] Download models
+  - [ ] Load into VRAM
+  - [ ] Inference execution
 
-- [ ] **Metrics Collection**
-  - [ ] Tokens processed
-  - [ ] Requests handled
-  - [ ] Latency measurements
-  - [ ] Uptime tracking
+- [ ] **Metrics**
+  - [ ] Requests processed
+  - [ ] Tokens generated
+  - [ ] Latency tracking
+  - [ ] Uptime monitoring
 
-- [ ] **CLI Commands**
-  ```bash
-  npx @repogen/node start --wallet 0x...
-  npx @repogen/node status
-  npx @repogen/node earnings
-  npx @repogen/node stop
-  ```
+### USDC Escrow Contract
 
-### Week 4: Earnings & Payouts
+- [ ] **Smart Contract**
+  - [ ] `deposit()` - Users deposit USDC
+  - [ ] `withdraw()` - Users withdraw USDC
+  - [ ] `settle()` - Deduct for usage
+  - [ ] `claimRewards()` - Contributors claim earnings
 
-- [ ] **USDC Escrow Contract**
-  - [ ] Create `packages/contracts/`
-  - [ ] `Escrow.sol` - deposit/withdraw
-  - [ ] `PaymentSplitter.sol` - revenue distribution
+- [ ] **Deployment**
   - [ ] Foundry test suite
-  - [ ] Deploy to Base testnet
-  - [ ] Deploy to Base mainnet
+  - [ ] Base testnet deployment
+  - [ ] Security audit
+  - [ ] Base mainnet deployment
 
-- [ ] **Earnings Tracking**
-  - [ ] Track tokens processed per node
-  - [ ] Calculate USDC earned
-  - [ ] Store in Redis/PostgreSQL
-  - [ ] API: GET `/v1/contributor/earnings`
+### Earnings & Payouts
 
-- [ ] **Payout System**
-  - [ ] Weekly payout batch
-  - [ ] Minimum payout threshold ($5)
+- [ ] **Tracking**
+  - [ ] Tokens processed per node
+  - [ ] USDC earned calculation
+  - [ ] Pending rewards display
+
+- [ ] **Settlement**
+  - [ ] Periodic batch settlement
   - [ ] On-chain USDC transfer
   - [ ] Transaction history
-
-- [ ] **Coordinator Service**
-  - [ ] Node registry
-  - [ ] Work distribution
-  - [ ] Payout calculation
-  - [ ] Fraud detection (basic)
 
 ### Deliverables
 
 | Deliverable | Description | Status |
 |-------------|-------------|--------|
-| `@repogen/node` | Published npm package | ⏳ |
-| Easy onboarding | One command to start | ⏳ |
-| Escrow contract | Deployed on Base | ⏳ |
+| `@repogen/node` | npm package for contributors | ⏳ |
+| Escrow contract | USDC deposits/payouts on Base | ⏳ |
 | First payout | USDC to contributor | ⏳ |
 
 ---
 
-## Phase 4: Network Growth ⏳
+## Phase 4: Growth & Scale ⏳
 
-**Status: Planned (Week 5-6)**
+**Status: Planned**
 
-Scale the network with reputation, smart routing, and dashboards.
+Reputation, smart routing, and network expansion.
 
-### Week 5: Reputation System
+### Reputation System
 
-- [ ] **Node Reputation**
-  - [ ] Uptime score (0-100%)
+- [ ] **Node Scoring**
+  - [ ] Uptime score
   - [ ] Latency percentiles
   - [ ] Success rate
-  - [ ] Tokens processed (volume)
+  - [ ] Volume processed
 
-- [ ] **Reputation Storage**
-  - [ ] PostgreSQL schema
-  - [ ] Rolling window calculations
-  - [ ] Historical tracking
+- [ ] **Incentives**
+  - [ ] Bonus for high reputation
+  - [ ] Penalty for failures
+  - [ ] Minimum threshold for payouts
 
-- [ ] **Smart Routing**
+### Smart Routing
+
+- [ ] **Optimizations**
   - [ ] Route to high-reputation nodes
   - [ ] Geographic proximity
   - [ ] Load balancing
-  - [ ] Failover to backup nodes
+  - [ ] Automatic failover
 
-- [ ] **Incentives**
-  - [ ] Bonus for high uptime
-  - [ ] Penalty for failures
-  - [ ] Minimum reputation threshold
-
-### Week 6: Dashboard & Monitoring
+### Dashboards
 
 - [ ] **Network Dashboard**
-  - [ ] Live node map (global)
+  - [ ] Live node map
   - [ ] Aggregate statistics
   - [ ] Model availability
-  - [ ] Network throughput
 
 - [ ] **Contributor Dashboard**
-  - [ ] Node status (online/offline)
+  - [ ] Node status
   - [ ] Earnings history
   - [ ] Reputation score
-  - [ ] Payout history
-
-- [ ] **User Dashboard**
-  - [ ] USDC balance
-  - [ ] Usage history
-  - [ ] Cost breakdown
-  - [ ] API key management
-
-- [ ] **Alerting**
-  - [ ] Network health alerts
-  - [ ] Low balance warnings
-  - [ ] Node offline notifications
 
 ### Deliverables
 
 | Deliverable | Description | Status |
 |-------------|-------------|--------|
 | Reputation system | Score nodes on performance | ⏳ |
-| Smart routing | Route to best nodes | ⏳ |
-| Network dashboard | Public health view | ⏳ |
-| Contributor dashboard | Earnings and stats | ⏳ |
-
----
-
-## Phase 5: Production Launch ⏳
-
-**Status: Planned (Week 7-8)**
-
-Security audit, documentation, and public launch.
-
-### Week 7: Security & Testing
-
-- [ ] **Security Audit**
-  - [ ] Smart contract audit
-  - [ ] API security review
-  - [ ] Penetration testing
-  - [ ] Fix identified issues
-
-- [ ] **Load Testing**
-  - [ ] Concurrent request handling
-  - [ ] Network stress test
-  - [ ] Payment flow under load
-  - [ ] Identify bottlenecks
-
-- [ ] **Documentation**
-  - [ ] API reference (OpenAPI)
-  - [ ] SDK documentation
-  - [ ] Contributor guide
-  - [ ] Troubleshooting guide
-
-- [ ] **Legal**
-  - [ ] Terms of Service
-  - [ ] Privacy Policy
-  - [ ] Contributor Agreement
-
-### Week 8: Launch
-
-- [ ] **Infrastructure**
-  - [ ] Production deployment
-  - [ ] CDN configuration
-  - [ ] Monitoring (Grafana/Datadog)
-  - [ ] Alerting (PagerDuty)
-
-- [ ] **Launch Checklist**
-  - [ ] All tests passing
-  - [ ] Security audit passed
-  - [ ] Documentation complete
-  - [ ] Contracts verified on Basescan
-
-- [ ] **Marketing**
-  - [ ] Launch announcement
-  - [ ] Twitter/X campaign
-  - [ ] Discord community
-  - [ ] Developer outreach
-
-- [ ] **Beta Users**
-  - [ ] Onboard first 100 users
-  - [ ] Onboard first 50 contributors
-  - [ ] Gather feedback
-  - [ ] Iterate on issues
-
-### Deliverables
-
-| Deliverable | Description | Status |
-|-------------|-------------|--------|
-| Security audit | Professional review | ⏳ |
-| Documentation | Complete docs site | ⏳ |
-| Production deploy | Live on mainnet | ⏳ |
-| Public launch | Open to all | ⏳ |
+| Smart routing | Optimal node selection | ⏳ |
+| Dashboards | Network and contributor views | ⏳ |
 
 ---
 
 ## Success Metrics
 
-### Phase 2 (Decentralization)
-- [ ] First decentralized inference request
-- [ ] <5s latency for Llama 70B
-- [ ] Zero centralized provider dependencies
+### Phase 2
+- [ ] Coordinator service operational
+- [ ] First inference through network
+- [ ] < 5s latency for GLM-5.2
 
-### Phase 3 (Contributor Network)
+### Phase 3
 - [ ] 10+ active contributor nodes
 - [ ] First USDC payout to contributor
 - [ ] `@repogen/node` published on npm
 
-### Phase 4 (Network Growth)
+### Phase 4
 - [ ] 50+ active nodes
-- [ ] 100K+ daily tokens processed
-- [ ] <2s average routing latency
-
-### Phase 5 (Production)
 - [ ] 99.9% API uptime
-- [ ] 100+ registered users
-- [ ] $1K+ daily volume
-- [ ] Zero security incidents
+- [ ] < 2s average routing latency
 
 ---
 
@@ -384,36 +235,11 @@ Security audit, documentation, and public launch.
 
 | Risk | Likelihood | Impact | Mitigation |
 |------|------------|--------|------------|
-| Petals network slow | Medium | High | Queue requests, show estimated wait |
 | Not enough contributors | Medium | High | Strong incentives, easy onboarding |
-| Smart contract bug | Low | Critical | Audit, formal verification, bug bounty |
-| Key theft | Low | High | Hash keys, rate limiting, revocation |
-| DDoS attack | Medium | Medium | Cloudflare, rate limiting |
+| Smart contract bug | Low | Critical | Audit, formal verification |
+| Network latency | Medium | Medium | Geographic routing, caching |
+| DDoS attack | Medium | Medium | Rate limiting, Cloudflare |
 
 ---
 
-## Team Focus
-
-| Week | Primary Focus | Secondary Focus |
-|------|---------------|-----------------|
-| 1 | Wallet-native auth | Dashboard UI |
-| 2 | Petals gateway | Network health |
-| 3 | Contributor node | CLI polish |
-| 4 | Escrow contract | Payout system |
-| 5 | Reputation system | Smart routing |
-| 6 | Dashboards | Monitoring |
-| 7 | Security audit | Documentation |
-| 8 | Launch prep | Marketing |
-
----
-
-## Changelog
-
-### June 2026
-
-- **Week 1**: Started Phase 2 - decentralization
-- **Prior**: Completed Phase 1 - foundation (API, payments, MCP)
-
----
-
-*This roadmap is updated weekly. Last update: June 20, 2026*
+*Last updated: June 2026*

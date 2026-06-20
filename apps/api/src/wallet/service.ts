@@ -1,21 +1,13 @@
 import { getRedisClient } from '../lib/redis'
-import {
-  createWallet,
-  getUsdcBalance,
-  transferToTreasury,
-  transferUsdc,
-  getWallet,
-  type WalletInfo,
-} from './privy'
+import { getUsdcBalance } from './chain'
 
 // Redis key prefixes
-const WALLET_KEY_PREFIX = 'wallet:'
-const USER_WALLET_PREFIX = 'user:wallet:'
+const WALLET_KEY_PREFIX = 'wallet:address:'
+const API_KEY_PREFIX = 'apikey:'
 
-export interface UserWallet {
-  walletId: string
+export interface WalletInfo {
   address: string
-  userId: string
+  apiKeyHash: string
   createdAt: number
 }
 
@@ -27,81 +19,76 @@ export interface WalletBalance {
 }
 
 /**
- * Create a wallet for a user and store the mapping.
+ * Register a wallet address with an API key hash.
+ * Called after successful SIWE authentication.
  */
-export async function createUserWallet(userId: string): Promise<UserWallet> {
+export async function registerWallet(
+  address: string,
+  apiKeyHash: string
+): Promise<WalletInfo> {
   const redis = getRedisClient()
+  const normalizedAddress = address.toLowerCase()
 
-  // Check if user already has a wallet
-  const existingWalletId = await redis.get(`${USER_WALLET_PREFIX}${userId}`)
-  if (existingWalletId) {
-    const existing = await getUserWallet(userId)
-    if (existing) return existing
+  const walletInfo: WalletInfo = {
+    address: normalizedAddress,
+    apiKeyHash,
+    createdAt: Date.now(),
   }
 
-  // Create new wallet via Privy
-  const wallet = await createWallet(userId)
+  // Store wallet info by address
+  await redis.set(
+    `${WALLET_KEY_PREFIX}${normalizedAddress}`,
+    JSON.stringify(walletInfo)
+  )
 
-  const userWallet: UserWallet = {
-    walletId: wallet.id,
-    address: wallet.address,
-    userId,
-    createdAt: wallet.createdAt,
-  }
+  // Store API key hash -> address mapping for auth lookup
+  await redis.set(`${API_KEY_PREFIX}${apiKeyHash}`, normalizedAddress)
 
-  // Store wallet info
-  await redis.set(`${WALLET_KEY_PREFIX}${wallet.id}`, JSON.stringify(userWallet))
-  await redis.set(`${USER_WALLET_PREFIX}${userId}`, wallet.id)
-
-  return userWallet
+  return walletInfo
 }
 
 /**
- * Get a user's wallet.
+ * Get wallet by address.
  */
-export async function getUserWallet(userId: string): Promise<UserWallet | null> {
+export async function getWalletByAddress(address: string): Promise<WalletInfo | null> {
   const redis = getRedisClient()
+  const normalizedAddress = address.toLowerCase()
 
-  const walletId = await redis.get(`${USER_WALLET_PREFIX}${userId}`)
-  if (!walletId) return null
+  const data = await redis.get(`${WALLET_KEY_PREFIX}${normalizedAddress}`)
+  if (!data) return null
 
-  const walletData = await redis.get(`${WALLET_KEY_PREFIX}${walletId}`)
-  if (!walletData) return null
-
-  return JSON.parse(walletData) as UserWallet
+  return JSON.parse(data) as WalletInfo
 }
 
 /**
- * Get wallet by wallet ID.
+ * Get wallet address by API key hash.
+ * Used for authenticating API requests.
  */
-export async function getWalletById(walletId: string): Promise<UserWallet | null> {
+export async function getAddressByApiKeyHash(apiKeyHash: string): Promise<string | null> {
   const redis = getRedisClient()
-
-  const walletData = await redis.get(`${WALLET_KEY_PREFIX}${walletId}`)
-  if (!walletData) return null
-
-  return JSON.parse(walletData) as UserWallet
+  return redis.get(`${API_KEY_PREFIX}${apiKeyHash}`)
 }
 
 /**
  * Get wallet balance including pending charges.
  */
-export async function getWalletBalance(userId: string): Promise<WalletBalance | null> {
-  const wallet = await getUserWallet(userId)
+export async function getWalletBalance(address: string): Promise<WalletBalance | null> {
+  const normalizedAddress = address.toLowerCase()
+  const wallet = await getWalletByAddress(normalizedAddress)
   if (!wallet) return null
 
   const redis = getRedisClient()
 
   // Get on-chain USDC balance
-  const balanceUsdc = await getUsdcBalance(wallet.address)
+  const balanceUsdc = await getUsdcBalance(normalizedAddress)
 
   // Get pending charges (reserved but not yet settled)
-  const pendingKey = `wallet:pending:${wallet.walletId}`
+  const pendingKey = `wallet:pending:${normalizedAddress}`
   const pendingStr = await redis.get(pendingKey)
   const pendingCharges = pendingStr ? parseFloat(pendingStr) : 0
 
   return {
-    address: wallet.address,
+    address: normalizedAddress,
     balanceUsdc,
     pendingCharges,
     availableUsdc: Math.max(0, balanceUsdc - pendingCharges),
@@ -113,11 +100,13 @@ export async function getWalletBalance(userId: string): Promise<WalletBalance | 
  * Returns true if sufficient balance, false otherwise.
  */
 export async function reserveFunds(
-  userId: string,
+  address: string,
   estimatedCostUsd: number,
   requestId: string
 ): Promise<{ success: boolean; reason?: string }> {
-  const balance = await getWalletBalance(userId)
+  const normalizedAddress = address.toLowerCase()
+  const balance = await getWalletBalance(normalizedAddress)
+
   if (!balance) {
     return { success: false, reason: 'wallet_not_found' }
   }
@@ -126,41 +115,34 @@ export async function reserveFunds(
     return { success: false, reason: 'insufficient_balance' }
   }
 
-  const wallet = await getUserWallet(userId)
-  if (!wallet) {
-    return { success: false, reason: 'wallet_not_found' }
-  }
-
   const redis = getRedisClient()
 
-  // Add to pending charges
-  const pendingKey = `wallet:pending:${wallet.walletId}`
+  // Add to pending charges atomically
+  const pendingKey = `wallet:pending:${normalizedAddress}`
   await redis.incrbyfloat(pendingKey, estimatedCostUsd)
 
-  // Store reservation for this request
-  const reservationKey = `wallet:reserve:${wallet.walletId}:${requestId}`
-  await redis.set(reservationKey, estimatedCostUsd.toString(), 'EX', 300) // 5 min expiry
+  // Store reservation for this request (5 min expiry)
+  const reservationKey = `wallet:reserve:${normalizedAddress}:${requestId}`
+  await redis.set(reservationKey, estimatedCostUsd.toString(), 'EX', 300)
 
   return { success: true }
 }
 
 /**
  * Settle funds after request completes.
- * Transfers actual cost to treasury.
+ * Records the charge for later on-chain settlement.
+ * In production, this triggers the escrow contract.
  */
 export async function settleFunds(
-  userId: string,
+  address: string,
   requestId: string,
   actualCostUsd: number
-): Promise<{ success: boolean; txHash?: string; error?: string }> {
-  const wallet = await getUserWallet(userId)
-  if (!wallet) {
-    return { success: false, error: 'wallet_not_found' }
-  }
-
+): Promise<{ success: boolean; error?: string }> {
+  const normalizedAddress = address.toLowerCase()
   const redis = getRedisClient()
-  const reservationKey = `wallet:reserve:${wallet.walletId}:${requestId}`
-  const pendingKey = `wallet:pending:${wallet.walletId}`
+
+  const reservationKey = `wallet:reserve:${normalizedAddress}:${requestId}`
+  const pendingKey = `wallet:pending:${normalizedAddress}`
 
   // Get reserved amount
   const reservedStr = await redis.get(reservationKey)
@@ -174,51 +156,32 @@ export async function settleFunds(
   // Clean up reservation
   await redis.del(reservationKey)
 
-  // Skip actual transfer for very small amounts (batch later)
-  // Or if in test mode
-  if (actualCostUsd < 0.001 || process.env.NODE_ENV === 'test' || !process.env.PRIVY_APP_ID) {
-    // Just track the charge for later batching
-    const chargesKey = `wallet:charges:${wallet.walletId}`
-    await redis.incrbyfloat(chargesKey, actualCostUsd)
-    return { success: true, txHash: 'batched' }
+  // Track the charge for batching/settlement
+  const chargesKey = `wallet:charges:${normalizedAddress}`
+  await redis.incrbyfloat(chargesKey, actualCostUsd)
+
+  // Record usage
+  const usageKey = `wallet:usage:${normalizedAddress}`
+  const usage = {
+    requestId,
+    amount: actualCostUsd,
+    timestamp: Date.now(),
   }
+  await redis.lpush(usageKey, JSON.stringify(usage))
+  await redis.ltrim(usageKey, 0, 999) // Keep last 1000
 
-  try {
-    // Transfer actual cost to treasury
-    const { hash } = await transferToTreasury(wallet.walletId, actualCostUsd)
-
-    // Record the settlement
-    const settlementsKey = `wallet:settlements:${wallet.walletId}`
-    const settlement = {
-      requestId,
-      amount: actualCostUsd,
-      txHash: hash,
-      timestamp: Date.now(),
-    }
-    await redis.lpush(settlementsKey, JSON.stringify(settlement))
-    await redis.ltrim(settlementsKey, 0, 999) // Keep last 1000
-
-    return { success: true, txHash: hash }
-  } catch (error) {
-    // If transfer fails, add back to pending for retry
-    await redis.incrbyfloat(pendingKey, actualCostUsd)
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Transfer failed',
-    }
-  }
+  return { success: true }
 }
 
 /**
  * Release reserved funds (on request failure).
  */
-export async function releaseFunds(userId: string, requestId: string): Promise<void> {
-  const wallet = await getUserWallet(userId)
-  if (!wallet) return
-
+export async function releaseFunds(address: string, requestId: string): Promise<void> {
+  const normalizedAddress = address.toLowerCase()
   const redis = getRedisClient()
-  const reservationKey = `wallet:reserve:${wallet.walletId}:${requestId}`
-  const pendingKey = `wallet:pending:${wallet.walletId}`
+
+  const reservationKey = `wallet:reserve:${normalizedAddress}:${requestId}`
+  const pendingKey = `wallet:pending:${normalizedAddress}`
 
   // Get reserved amount
   const reservedStr = await redis.get(reservationKey)
@@ -234,47 +197,41 @@ export async function releaseFunds(userId: string, requestId: string): Promise<v
 }
 
 /**
- * Withdraw USDC to an external address.
+ * Get accumulated charges for a wallet (for batched settlement).
  */
-export async function withdraw(
-  userId: string,
-  recipientAddress: string,
-  amountUsd: number
-): Promise<{ success: boolean; txHash?: string; error?: string }> {
-  const wallet = await getUserWallet(userId)
-  if (!wallet) {
-    return { success: false, error: 'wallet_not_found' }
-  }
+export async function getAccumulatedCharges(address: string): Promise<number> {
+  const normalizedAddress = address.toLowerCase()
+  const redis = getRedisClient()
 
-  const balance = await getWalletBalance(userId)
-  if (!balance || balance.availableUsdc < amountUsd) {
-    return { success: false, error: 'insufficient_balance' }
-  }
+  const chargesKey = `wallet:charges:${normalizedAddress}`
+  const chargesStr = await redis.get(chargesKey)
 
-  try {
-    const { hash } = await transferUsdc(wallet.walletId, recipientAddress, amountUsd)
-    return { success: true, txHash: hash }
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Withdrawal failed',
-    }
-  }
+  return chargesStr ? parseFloat(chargesStr) : 0
 }
 
 /**
- * Get settlement history for a wallet.
+ * Clear accumulated charges after on-chain settlement.
  */
-export async function getSettlementHistory(
-  userId: string,
-  limit = 100
-): Promise<Array<{ requestId: string; amount: number; txHash: string; timestamp: number }>> {
-  const wallet = await getUserWallet(userId)
-  if (!wallet) return []
-
+export async function clearAccumulatedCharges(address: string): Promise<void> {
+  const normalizedAddress = address.toLowerCase()
   const redis = getRedisClient()
-  const settlementsKey = `wallet:settlements:${wallet.walletId}`
 
-  const settlements = await redis.lrange(settlementsKey, 0, limit - 1)
-  return settlements.map((s) => JSON.parse(s))
+  const chargesKey = `wallet:charges:${normalizedAddress}`
+  await redis.set(chargesKey, '0')
+}
+
+/**
+ * Get usage history for a wallet.
+ */
+export async function getUsageHistory(
+  address: string,
+  limit = 100
+): Promise<Array<{ requestId: string; amount: number; timestamp: number }>> {
+  const normalizedAddress = address.toLowerCase()
+  const redis = getRedisClient()
+
+  const usageKey = `wallet:usage:${normalizedAddress}`
+  const usage = await redis.lrange(usageKey, 0, limit - 1)
+
+  return usage.map((s) => JSON.parse(s))
 }

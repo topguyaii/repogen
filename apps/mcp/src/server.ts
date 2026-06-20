@@ -51,14 +51,14 @@ export function createMcpServer() {
       version: '0.1.0',
     },
     {
-      instructions: `repogen is a private inference layer for AI agents.
+      instructions: `repogen is a decentralized AI inference network. Community-owned compute. USDC payments on Base.
 
 Available tools:
 - chat: Send messages to any supported LLM model
-- list_models: List all available models with pricing
+- list_models: List all available models
 - get_balance: Check your wallet balance
 
-All requests are paid per-call in USDC. Ensure your wallet is funded before making requests.`,
+All requests are paid per-call in USDC on Base. No logs, ever.`,
     }
   )
 

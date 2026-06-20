@@ -2,18 +2,29 @@ import type { Context, Next } from 'hono'
 import { MODELS } from '@repogen/shared'
 import { Errors } from '../middleware/error-handler'
 import type { APIKeyData } from '../auth/api-key'
-import { reserveFunds, getUserWallet, createUserWallet } from './service'
+import { reserveFunds, getWalletByAddress } from './service'
 
 /**
  * Payment middleware - checks wallet balance and reserves funds.
  * Runs after auth middleware and budget middleware.
+ *
+ * With wallet-native auth, the API key is tied to a wallet address.
+ * The address is stored in apiKey.walletAddress.
  */
 export async function paymentMiddleware(c: Context, next: Next) {
-  const apiKey = c.get('apiKey') as APIKeyData | undefined
+  const apiKey = c.get('apiKey') as (APIKeyData & { walletAddress?: string }) | undefined
   const requestId = c.get('requestId') as string | undefined
 
   // Skip if no API key (shouldn't happen after auth middleware)
   if (!apiKey || !requestId) {
+    return next()
+  }
+
+  // Get wallet address from API key
+  const walletAddress = apiKey.walletAddress
+  if (!walletAddress) {
+    // Skip payment if no wallet (e.g., test keys)
+    c.set('skipPayment', true)
     return next()
   }
 
@@ -49,30 +60,26 @@ export async function paymentMiddleware(c: Context, next: Next) {
   const outputCost = (estimatedOutputTokens / 1_000_000) * model.output_price_per_m
   const estimatedCostUsd = inputCost + outputCost
 
-  // Ensure user has a wallet (auto-create if needed)
-  let wallet = await getUserWallet(apiKey.id)
+  // Check wallet exists
+  const wallet = await getWalletByAddress(walletAddress)
   if (!wallet) {
-    try {
-      wallet = await createUserWallet(apiKey.id)
-    } catch (error) {
-      // If wallet creation fails in test mode or without Privy, skip payment
-      if (process.env.NODE_ENV === 'test' || !process.env.PRIVY_APP_ID) {
-        c.set('skipPayment', true)
-        return next()
-      }
-      throw Errors.internalError('Failed to create wallet')
+    // Skip payment in test mode
+    if (process.env.NODE_ENV === 'test') {
+      c.set('skipPayment', true)
+      return next()
     }
+    throw Errors.invalidRequest('Wallet not found. Please authenticate with SIWE first.', null)
   }
 
   // Reserve funds for this request
-  const result = await reserveFunds(apiKey.id, estimatedCostUsd, requestId)
+  const result = await reserveFunds(walletAddress, estimatedCostUsd, requestId)
 
   if (!result.success) {
     if (result.reason === 'insufficient_balance') {
       throw Errors.insufficientBalance()
     }
     if (result.reason === 'wallet_not_found') {
-      throw Errors.invalidRequest('No wallet found. Please create a wallet first.', null)
+      throw Errors.invalidRequest('No wallet found. Please authenticate first.', null)
     }
     throw Errors.internalError('Payment reservation failed')
   }
@@ -80,6 +87,7 @@ export async function paymentMiddleware(c: Context, next: Next) {
   // Store estimated cost for later settlement
   c.set('estimatedCostUsd', estimatedCostUsd)
   c.set('paymentReserved', true)
+  c.set('walletAddress', walletAddress)
 
   return next()
 }

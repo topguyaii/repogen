@@ -1,79 +1,74 @@
 'use client'
 
-import { usePrivy } from '@privy-io/react-auth'
-import { useEffect, useState } from 'react'
+import { useAccount } from 'wagmi'
+import { useSiwe } from '@/providers'
 import { Sidebar } from '@/components/dashboard/sidebar'
 import { Header } from '@/components/dashboard/header'
-
-// Dev bypass - set to true to skip Privy auth during development
-const DEV_BYPASS_AUTH = process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_DEV_BYPASS_AUTH === 'true'
+import { ConnectButton } from '@rainbow-me/rainbowkit'
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const { ready, authenticated, login } = usePrivy()
-  const [bypassAuth, setBypassAuth] = useState(false)
+  const { isConnected } = useAccount()
+  const { isAuthenticated, isLoading, signIn, error } = useSiwe()
 
-  useEffect(() => {
-    // Check for dev bypass via URL param: ?bypass=true
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search)
-      if (params.get('bypass') === 'true' && process.env.NODE_ENV === 'development') {
-        setBypassAuth(true)
-      }
-    }
-  }, [])
-
-  useEffect(() => {
-    if (ready && !authenticated && !bypassAuth && !DEV_BYPASS_AUTH) {
-      login()
-    }
-  }, [ready, authenticated, login, bypassAuth])
-
-  // Dev bypass mode
-  if (bypassAuth || DEV_BYPASS_AUTH) {
+  // Not connected - show connect wallet prompt
+  if (!isConnected) {
     return (
-      <div className="flex h-screen bg-black text-white">
-        <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Header />
-          <main className="flex-1 overflow-auto p-6">
-            <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-              <p className="text-sm text-yellow-400">Dev Mode: Auth bypassed. Add ?bypass=true to URL or set NEXT_PUBLIC_DEV_BYPASS_AUTH=true</p>
+      <div className="flex h-screen bg-black text-white items-center justify-center">
+        <div className="text-center max-w-md px-6">
+          <h1 className="text-2xl font-semibold mb-4">Connect Your Wallet</h1>
+          <p className="text-white/60 mb-8">
+            Connect your wallet to access the dashboard and start using decentralized AI inference.
+          </p>
+          <ConnectButton />
+        </div>
+      </div>
+    )
+  }
+
+  // Connected but not authenticated - show sign in prompt
+  if (!isAuthenticated) {
+    return (
+      <div className="flex h-screen bg-black text-white items-center justify-center">
+        <div className="text-center max-w-md px-6">
+          <h1 className="text-2xl font-semibold mb-4">Sign In</h1>
+          <p className="text-white/60 mb-8">
+            Sign a message with your wallet to verify ownership and receive your API key.
+          </p>
+
+          {error && (
+            <div className="mb-6 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+              <p className="text-sm text-red-400">{error}</p>
             </div>
-            {children}
-          </main>
+          )}
+
+          <button
+            onClick={signIn}
+            disabled={isLoading}
+            className="px-6 py-3 bg-white text-black font-medium rounded-lg hover:bg-white/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? (
+              <span className="flex items-center gap-2">
+                <span className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                Signing...
+              </span>
+            ) : (
+              'Sign In with Ethereum'
+            )}
+          </button>
+
+          <div className="mt-6">
+            <ConnectButton />
+          </div>
         </div>
       </div>
     )
   }
 
-  // Show loading while Privy initializes
-  if (!ready) {
-    return (
-      <div className="flex h-screen bg-black text-white items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-white/50 text-sm">Loading...</p>
-        </div>
-      </div>
-    )
-  }
-
-  // Show nothing while redirecting to login
-  if (!authenticated) {
-    return (
-      <div className="flex h-screen bg-black text-white items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-white/50 text-sm">Redirecting to login...</p>
-        </div>
-      </div>
-    )
-  }
-
+  // Authenticated - show dashboard
   return (
     <div className="flex h-screen bg-black text-white">
       <Sidebar />

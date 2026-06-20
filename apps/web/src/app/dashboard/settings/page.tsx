@@ -1,17 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { usePrivy, useWallets } from '@privy-io/react-auth'
+import { useAccount } from 'wagmi'
+import { useSiwe } from '@/providers'
 
 export default function SettingsPage() {
   const [defaultPrivacy, setDefaultPrivacy] = useState('no-log')
   const [saved, setSaved] = useState(false)
-  const { user } = usePrivy()
-  const { wallets } = useWallets()
-
-  const embeddedWallet = wallets.find((w) => w.walletClientType === 'privy')
-  const email = user?.email?.address || ''
-  const walletAddress = embeddedWallet?.address || ''
+  const { address } = useAccount()
+  const { apiKey } = useSiwe()
 
   const handleSave = () => {
     setSaved(true)
@@ -19,8 +16,14 @@ export default function SettingsPage() {
   }
 
   const copyAddress = () => {
-    if (walletAddress) {
-      navigator.clipboard.writeText(walletAddress)
+    if (address) {
+      navigator.clipboard.writeText(address)
+    }
+  }
+
+  const copyApiKey = () => {
+    if (apiKey) {
+      navigator.clipboard.writeText(apiKey)
     }
   }
 
@@ -36,34 +39,63 @@ export default function SettingsPage() {
         <h3 className="font-medium mb-4">Account</h3>
         <div className="space-y-4">
           <div>
-            <label className="text-sm text-white/50 block mb-2">Email</label>
-            <input
-              type="email"
-              value={email}
-              disabled
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white/70 cursor-not-allowed"
-            />
-          </div>
-          <div>
             <label className="text-sm text-white/50 block mb-2">Wallet Address</label>
             <div className="flex items-center gap-2">
               <input
                 type="text"
-                value={walletAddress || 'Loading...'}
+                value={address || 'Loading...'}
                 disabled
                 className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white/70 cursor-not-allowed font-mono"
               />
               <button
                 onClick={copyAddress}
-                disabled={!walletAddress}
+                disabled={!address}
                 className="px-3 py-2.5 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-colors disabled:opacity-50"
               >
                 <CopyIcon className="w-4 h-4" />
               </button>
             </div>
             <p className="text-xs text-white/40 mt-1.5">
-              Automatically created on Base. Used for USDC payments.
+              Your connected wallet on Base. Used for USDC payments.
             </p>
+          </div>
+        </div>
+      </div>
+
+      {/* API Key */}
+      <div className="border border-white/10 rounded-xl p-6 bg-white/[0.02] mb-6">
+        <h3 className="font-medium mb-4">API Key</h3>
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm text-white/50 block mb-2">Your API Key</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="password"
+                value={apiKey || 'Not authenticated'}
+                disabled
+                className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white/70 cursor-not-allowed font-mono"
+              />
+              <button
+                onClick={copyApiKey}
+                disabled={!apiKey}
+                className="px-3 py-2.5 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-colors disabled:opacity-50"
+              >
+                <CopyIcon className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-xs text-white/40 mt-1.5">
+              Use this key to authenticate API requests. Keep it secret.
+            </p>
+          </div>
+
+          <div className="p-4 bg-white/5 border border-white/10 rounded-lg">
+            <p className="text-sm text-white/80 mb-2">Usage Example:</p>
+            <code className="text-xs font-mono text-white/60 block overflow-x-auto">
+              curl https://api.repogen.ai/v1/chat/completions \<br />
+              &nbsp;&nbsp;-H &quot;Authorization: Bearer {apiKey ? apiKey.slice(0, 12) + '...' : 'YOUR_API_KEY'}&quot; \<br />
+              &nbsp;&nbsp;-H &quot;Content-Type: application/json&quot; \<br />
+              &nbsp;&nbsp;-d &apos;{`{"model":"llama-3.1-70b","messages":[...]}`}&apos;
+            </code>
           </div>
         </div>
       </div>

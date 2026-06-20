@@ -14,11 +14,11 @@
   "dependencies": {
     "@hono/node-server": "^1.11.0",
     "@hono/zod-validator": "^0.2.0",
-    "@privy-io/server-auth": "^1.32.5",
     "@repogen/db": "workspace:*",
     "@repogen/shared": "workspace:*",
     "hono": "^4.4.0",
     "ioredis": "^5.4.0",
+    "siwe": "^3.0.0",
     "viem": "^2.52.2",
     "zod": "^3.23.0"
   },

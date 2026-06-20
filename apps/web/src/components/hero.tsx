@@ -64,11 +64,11 @@ export function Hero() {
       {/* CONTENT */}
       <div className="relative z-10 max-w-[1200px] mx-auto px-6 md:px-[100px] pt-[120px] md:pt-[190px] pb-[80px] md:pb-[120px]">
         <h1 className="text-[40px] md:text-[66px] leading-[1.2] md:leading-[98px] text-[#F7F8FC] font-serif max-w-[640px]">
-          The private inference layer for your agents.
+          Decentralized AI inference.
         </h1>
 
         <p className="mt-[20px] text-[16px] md:text-[18px] leading-[26px] md:leading-[28px] text-[#9FA4B2] max-w-[871px]">
-          Point your agent at one endpoint and reach every model, open and closed. It pays per call in USDC, with no account and no logs, while repogen routes each call to the right provider and caps what the agent can spend.
+          Community-owned compute. GPU contributors earn USDC. Developers get OpenAI-compatible API access. No logs, ever. Censorship resistant.
         </p>
 
         {/* Buttons */}
