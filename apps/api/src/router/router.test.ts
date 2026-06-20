@@ -127,4 +127,61 @@ describe('Router', () => {
       expect(result.providerId).toBe('groq')
     })
   })
+
+  describe('privacy tier routing', () => {
+    it('routes to no-log providers for no-log tier', () => {
+      const context: RoutingContext = {
+        modelId: 'kimi-k2.7',
+        strategy: 'cheapest',
+        privacyTier: 'no-log',
+      }
+
+      const result = selectProvider(context)
+      // Together and Fireworks are no-log verified
+      expect(['together', 'fireworks', 'phala']).toContain(result.providerId)
+    })
+
+    it('routes to TEE provider for tee tier', () => {
+      const context: RoutingContext = {
+        modelId: 'llama-4-maverick', // Available on Phala
+        strategy: 'cheapest',
+        privacyTier: 'tee',
+      }
+
+      const result = selectProvider(context)
+      // Only Phala supports TEE
+      expect(result.providerId).toBe('phala')
+    })
+
+    it('throws when model not available on TEE provider', () => {
+      const context: RoutingContext = {
+        modelId: 'gpt-4o', // Not available on Phala
+        strategy: 'cheapest',
+        privacyTier: 'tee',
+      }
+
+      expect(() => selectProvider(context)).toThrow('No available providers')
+    })
+
+    it('routes closed models only to their provider', () => {
+      const context: RoutingContext = {
+        modelId: 'claude-sonnet-4',
+        strategy: 'cheapest',
+        privacyTier: 'standard',
+      }
+
+      const result = selectProvider(context)
+      expect(result.providerId).toBe('anthropic')
+    })
+
+    it('rejects no-log for closed models', () => {
+      const context: RoutingContext = {
+        modelId: 'claude-sonnet-4',
+        strategy: 'cheapest',
+        privacyTier: 'no-log',
+      }
+
+      expect(() => selectProvider(context)).toThrow()
+    })
+  })
 })

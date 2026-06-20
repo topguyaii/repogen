@@ -25,8 +25,9 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['Geist', 'Inter', 'system-ui', 'sans-serif'],
-        mono: ['Geist Mono', 'JetBrains Mono', 'monospace'],
+        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-mono)', 'monospace'],
+        serif: ['var(--font-playfair)', 'Georgia', 'serif'],
       },
       borderRadius: {
         card: '14px',

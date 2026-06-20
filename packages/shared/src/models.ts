@@ -11,6 +11,7 @@ export interface ModelDefinition {
   supports_streaming: boolean
   supports_tools: boolean
   privacy_tiers: ('standard' | 'no-log' | 'tee')[]
+  is_open: boolean // Open source vs proprietary
 }
 
 // Available models - Best in class for open and closed (June 2026)
@@ -31,6 +32,7 @@ export const MODELS: Record<string, ModelDefinition> = {
     supports_streaming: true,
     supports_tools: true,
     privacy_tiers: ['standard', 'no-log'],
+    is_open: true,
   },
 
   // #2 - DeepSeek V4 Pro - Leading open weights on coding
@@ -45,6 +47,7 @@ export const MODELS: Record<string, ModelDefinition> = {
     supports_streaming: true,
     supports_tools: true,
     privacy_tiers: ['standard', 'no-log'],
+    is_open: true,
   },
 
   // #3 - GLM-5.2 - Strongest coding-oriented open source
@@ -59,6 +62,7 @@ export const MODELS: Record<string, ModelDefinition> = {
     supports_streaming: true,
     supports_tools: true,
     privacy_tiers: ['standard', 'no-log'],
+    is_open: true,
   },
 
   // #4 - Llama 4 Maverick - Meta's best (17B active / 400B total)
@@ -73,6 +77,7 @@ export const MODELS: Record<string, ModelDefinition> = {
     supports_streaming: true,
     supports_tools: true,
     privacy_tiers: ['standard', 'no-log'],
+    is_open: true,
   },
 
   // #5 - Llama 4 Scout - 10M context window
@@ -86,6 +91,7 @@ export const MODELS: Record<string, ModelDefinition> = {
     supports_streaming: true,
     supports_tools: true,
     privacy_tiers: ['standard', 'no-log'],
+    is_open: true,
   },
 
   // #6 - Qwen 3.5 - Best-in-class graduate-level reasoning
@@ -99,6 +105,7 @@ export const MODELS: Record<string, ModelDefinition> = {
     supports_streaming: true,
     supports_tools: true,
     privacy_tiers: ['standard', 'no-log'],
+    is_open: true,
   },
 
   // #7 - MiniMax M3 - Strong coding (80.5% SWE-Bench)
@@ -112,6 +119,7 @@ export const MODELS: Record<string, ModelDefinition> = {
     supports_streaming: true,
     supports_tools: true,
     privacy_tiers: ['standard', 'no-log'],
+    is_open: true,
   },
 
   // #8 - DeepSeek R1 - Reasoning specialist
@@ -125,6 +133,7 @@ export const MODELS: Record<string, ModelDefinition> = {
     supports_streaming: true,
     supports_tools: true,
     privacy_tiers: ['standard', 'no-log'],
+    is_open: true,
   },
 
   // #9 - Qwen 3.5 Coder - Coding specialist
@@ -138,6 +147,7 @@ export const MODELS: Record<string, ModelDefinition> = {
     supports_streaming: true,
     supports_tools: true,
     privacy_tiers: ['standard', 'no-log'],
+    is_open: true,
   },
 
   // #10 - Gemma 4 31B - Google's open model
@@ -151,6 +161,7 @@ export const MODELS: Record<string, ModelDefinition> = {
     supports_streaming: true,
     supports_tools: true,
     privacy_tiers: ['standard', 'no-log'],
+    is_open: true,
   },
 
   // #11 - Mistral Small 4 - Production-ready
@@ -164,6 +175,7 @@ export const MODELS: Record<string, ModelDefinition> = {
     supports_streaming: true,
     supports_tools: true,
     privacy_tiers: ['standard', 'no-log'],
+    is_open: true,
   },
 
   // #12 - Llama 4 Scout Mini - Fast and cheap
@@ -177,6 +189,7 @@ export const MODELS: Record<string, ModelDefinition> = {
     supports_streaming: true,
     supports_tools: true,
     privacy_tiers: ['standard', 'no-log'],
+    is_open: true,
   },
 
   // ===================
@@ -194,6 +207,7 @@ export const MODELS: Record<string, ModelDefinition> = {
     supports_streaming: true,
     supports_tools: true,
     privacy_tiers: ['standard'],
+    is_open: false,
   },
 
   // GPT-4o Mini - Best value OpenAI
@@ -207,6 +221,7 @@ export const MODELS: Record<string, ModelDefinition> = {
     supports_streaming: true,
     supports_tools: true,
     privacy_tiers: ['standard'],
+    is_open: false,
   },
 
   // o3-mini - Affordable reasoning
@@ -220,6 +235,7 @@ export const MODELS: Record<string, ModelDefinition> = {
     supports_streaming: true,
     supports_tools: true,
     privacy_tiers: ['standard'],
+    is_open: false,
   },
 
   // Claude Sonnet 4 - Best balance of capability and cost
@@ -233,6 +249,7 @@ export const MODELS: Record<string, ModelDefinition> = {
     supports_streaming: true,
     supports_tools: true,
     privacy_tiers: ['standard'],
+    is_open: false,
   },
 
   // Claude Haiku 3.5 - Fast and cheap
@@ -246,6 +263,7 @@ export const MODELS: Record<string, ModelDefinition> = {
     supports_streaming: true,
     supports_tools: true,
     privacy_tiers: ['standard'],
+    is_open: false,
   },
 }
 

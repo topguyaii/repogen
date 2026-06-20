@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "repogen": {
+      "url": "http://localhost:3002/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_API_KEY"
+      }
+    }
+  }
+}

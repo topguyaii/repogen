@@ -8,6 +8,7 @@ import { errorHandler } from './middleware/error-handler'
 import { authMiddleware, optionalAuthMiddleware } from './auth/middleware'
 import { budgetMiddleware } from './budget/middleware'
 import { paymentMiddleware } from './wallet/middleware'
+import { rateLimitMiddleware, requestSizeLimitMiddleware, timeoutMiddleware } from './ratelimit/middleware'
 import { ensureTestKey } from './auth/api-key'
 
 const app = new Hono()
@@ -15,6 +16,8 @@ const app = new Hono()
 // Middleware
 app.use('*', cors())
 app.use('*', logger())
+app.use('*', requestSizeLimitMiddleware)
+app.use('*', timeoutMiddleware)
 app.onError(errorHandler)
 
 // Health checks (no auth required)
@@ -30,8 +33,9 @@ app.use('/v1/wallet/*', authMiddleware)
 app.use('/v1/wallet', authMiddleware)
 app.route('/v1/wallet', wallet)
 
-// Chat completions (requires auth, budget check, and payment)
+// Chat completions (requires auth, rate limit, budget check, and payment)
 app.use('/v1/chat/*', authMiddleware)
+app.use('/v1/chat/*', rateLimitMiddleware)
 app.use('/v1/chat/*', budgetMiddleware)
 app.use('/v1/chat/*', paymentMiddleware)
 app.route('/v1/chat', chatCompletions)
